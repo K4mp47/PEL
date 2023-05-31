@@ -16,7 +16,6 @@
 > - gestire eccezioni
 
 >⚠ importante riguardare la calcolatrice dal moodle di PEL.
-
 >json.hpp 
 ```cpp
 #include <iostream>
