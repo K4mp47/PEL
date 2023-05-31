@@ -2,6 +2,7 @@
 #include <istream>
 #include <sstream>
 
+// define type of the json struct
 enum Type { Boolean, Number, Null, Dict, List, String };
 
 struct json::impl {
