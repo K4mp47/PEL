@@ -1,14 +1,8 @@
 #include "../include/json.hpp" 
-#include <cctype>
 #include <iostream>
-#include <istream>
-#include <sstream>
-#include <string>
 
 // define type of the json struct
 enum Type { Boolean, Number, Null, Dict, List, String };
-
-
 
 struct json::impl {
   bool b_value;
@@ -83,11 +77,45 @@ bool json::is_list() const {
   return pimpl->type == Type::List;
 }
 
+void json::set_list(){
+  this->~json();
+  new (this) json();
+  pimpl->type = Type::List;
+}
+
+void json::push_back(json const& x) {
+  if (pimpl->list_head == nullptr){
+    pimpl->type = Type::List;
+    pimpl->list_head = new json::impl::list{x, nullptr};
+    pimpl->list_tail = pimpl->list_head;
+  } else {
+    pimpl->list_tail->next = new json::impl::list{x, nullptr};
+    pimpl->list_tail = pimpl->list_tail->next; 
+  }
+}
+
 // dictionary control
 
 bool json::is_dictionary() const {
   return pimpl->type == Type::Dict;
 }
+
+void json::set_dictionary(){
+  this->~json();
+  new (this) json();
+  pimpl->type = Type::Dict;
+}
+
+void json::insert(std::pair<std::string, json> const& elem) {
+  if(pimpl->dict_head == nullptr){
+    pimpl->dict_head = new json::impl::dict{elem, nullptr};
+    pimpl->dict_tail = pimpl->dict_head;
+  } else {
+    pimpl->dict_tail->next = new json::impl::dict{elem, nullptr};
+    pimpl->dict_tail = pimpl->dict_tail->next;
+  }
+}
+
 
 // string control
 
@@ -111,6 +139,42 @@ bool json::is_string() const {
   return pimpl->type == Type::String;
 }
 
+void json::set_string(std::string const& value){
+  this->~json();
+  new (this) json();
+  pimpl->s_value = value;
+  pimpl->type = Type::String;
+}
+
+void parse_string(std::istream& hs, std::string& str){
+  char c;
+  hs >> std::noskipws >> c;
+
+  str.clear();
+  while(hs.get(c)) {
+    if (c == '\\') {
+      if (hs.get(c)){
+        switch(c) {
+          case 'n': str += '\n'; break;
+          case 'r': str += '\r'; break;
+          case 't': str += '\t'; break;
+          case '\"': str += '\"'; break;
+          case '\'': str += '\''; break;
+          case '\\': str += '\\'; break;
+          default: str += '\\'; str += c; break;
+        }
+      } else {
+        throw json_exception{ .msg = "Invalid escape sequence"};
+      }
+    } else if(c == '"'){
+      return;
+    } else {
+      str += c;
+    }
+  }
+
+  throw json_exception{ .msg = "Error occurred during parsing"};
+}
 // number control
 
 double& json::get_number() {
@@ -134,6 +198,13 @@ bool json::is_number() const {
   return pimpl->type == Type::Number;
 }
 
+
+void json::set_number(double number) {
+  this->~json();
+  new (this) json();
+  pimpl->d_value = number;
+  pimpl->type = Type::Number;
+}
 // bool control
 
 bool& json::get_bool(){
@@ -159,7 +230,7 @@ bool json::is_bool() const {
 void json::set_bool(bool value) {
   this->~json();
   new (this) json();
-  
+  //pimpl = new impl; 
   pimpl->b_value = value;
   pimpl->type = Type::Boolean;
 }
@@ -189,10 +260,14 @@ bool json::is_null() const{
 
 std::istream& operator>>(std::istream& hs, json& rhs) {
   if(hs.peek() == '"'){
-    hs.get();
-    //parse_string(hs, rhs);
-  } else if(std::isdigit(hs.peek())) {
+    std::string str;
+    parse_string(hs, str);
+    rhs.set_string(str);
+  } else if(std::isdigit(hs.peek()) || hs.peek() == '-') {
     //parse_double(hs, rhs);
+    double num;    
+    hs >> num;
+    rhs.set_number(num); // Set Num Type
   } else if(hs.peek() == 't' || hs.peek() == 'f') {
     //parse_boolean(hs, rhs); ? serve?
     bool value;
@@ -201,15 +276,37 @@ std::istream& operator>>(std::istream& hs, json& rhs) {
   } else if(hs.peek() == '[') {
     char c;
     hs >> c;  // Read '['
-    while( hs.peek() == ']'){
+    rhs.set_list(); // Set List Type
+    while( hs.peek() != ']'){
       json item;
       hs >> item;
       rhs.push_back(item);
+    
+      if(hs.peek() == ','){
+        hs.ignore();
+      }
     }
 
-    //rhs.pimpl->type = Type::List;
-    //rhs.pimpl->list_head = nullptr;
-    //rhs.pimpl->list_tail = nullptr;
+    hs.ignore();
+  } else if(hs.peek() == '{') {
+    char c;
+    hs >> c;
+    rhs.set_dictionary(); // Set Dict Type
+    while (hs.peek() != '}'){ // Fill Dict
+      std::string key;
+      hs >> key;
+      if (hs.get() != ':')
+        throw json_exception{.msg = "Invalid dictionary format" }; 
+      json value;
+      hs >> value;
+      rhs.insert({key, value});
+       
+      if(hs.peek() == ',')
+        hs.ignore();
+    }
+    
+    hs.ignore();
+
   }
   return hs;
 }
