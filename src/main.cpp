@@ -22,16 +22,16 @@ struct json::impl {
     list* next;
   };
   
-  list* list_head;
-  list* list_tail;
+  list* list_head = nullptr;
+  list* list_tail = nullptr;
 
   struct dict{
     std::pair<std::string, json> info;
     dict* next;
   };
   
-  dict* dict_head;
-  dict* dict_tail;
+  dict* dict_head = nullptr;
+  dict* dict_tail = nullptr;
   
   Type type;
 };
@@ -50,13 +50,40 @@ json::json(json&&){
 }
 
 // destructor
-json::~json(){
+json::~json() {
+  // Clean up list elements
+  impl::list* currentList = pimpl->list_head;
+  while (currentList) {
+    impl::list* nextList = currentList->next;
+    delete currentList;
+    currentList = nextList;
+  }
 
+  // Clean up dictionary elements
+  impl::dict* currentDict = pimpl->dict_head;
+  while (currentDict) {
+    impl::dict* nextDict = currentDict->next;
+    delete currentDict;
+    currentDict = nextDict;
+  }
+
+  // Reset struct values
+  pimpl->b_value = false;
+  pimpl->d_value = 0.0;
+  pimpl->s_value.clear();
+  pimpl->type = Type::Null;
+
+  // Clean up pimpl itself
+  delete pimpl;
 }
+
+// list control
 
 bool json::is_list() const {
   return pimpl->type == Type::List;
 }
+
+// dictionary control
 
 bool json::is_dictionary() const {
   return pimpl->type == Type::Dict;
@@ -130,6 +157,9 @@ bool json::is_bool() const {
 }
 
 void json::set_bool(bool value) {
+  this->~json();
+  new (this) json();
+  
   pimpl->b_value = value;
   pimpl->type = Type::Boolean;
 }
@@ -169,7 +199,17 @@ std::istream& operator>>(std::istream& hs, json& rhs) {
     hs >> value;
     rhs.set_bool(value);
   } else if(hs.peek() == '[') {
+    char c;
+    hs >> c;  // Read '['
+    while( hs.peek() == ']'){
+      json item;
+      hs >> item;
+      rhs.push_back(item);
+    }
 
+    //rhs.pimpl->type = Type::List;
+    //rhs.pimpl->list_head = nullptr;
+    //rhs.pimpl->list_tail = nullptr;
   }
   return hs;
 }
