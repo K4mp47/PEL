@@ -1,6 +1,9 @@
 #include "../include/json.hpp" 
+#include <cctype>
 #include <iostream>
+#include <istream>
 #include <sstream>
+#include <string>
 
 // define type of the json struct
 enum Type { Boolean, Number, Null, Dict, List, String };
@@ -126,6 +129,11 @@ bool json::is_bool() const {
   return pimpl->type == Type::Boolean;
 }
 
+void json::set_bool(bool value) {
+  pimpl->b_value = value;
+  pimpl->type = Type::Boolean;
+}
+
 // null control
 
 bool json::is_null() const{
@@ -144,13 +152,26 @@ bool json::is_null() const{
 
 //put_back(cosa voglio in char) ributta nella stream quello che voglio
 
+//void parse_boolean(std::istream& hs, json& rhs) {
+//  bool value;
+//  hs >> value;
+//}
+
 std::istream& operator>>(std::istream& hs, json& rhs) {
-  if(hs.get() == '"'){
-    parse_string(hs, rhs);
-  } else if(hs.get() >= 0 && hs.get() <= 9) {
+  if(hs.peek() == '"'){
+    hs.get();
+    //parse_string(hs, rhs);
+  } else if(std::isdigit(hs.peek())) {
+    //parse_double(hs, rhs);
+  } else if(hs.peek() == 't' || hs.peek() == 'f') {
+    //parse_boolean(hs, rhs); ? serve?
+    bool value;
+    hs >> value;
+    rhs.set_bool(value);
+  } else if(hs.peek() == '[') {
 
   }
-
+  return hs;
 }
 
 int main(){
