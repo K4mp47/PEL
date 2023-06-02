@@ -94,6 +94,46 @@ void json::push_back(json const& x) {
   }
 }
 
+struct json::list_iterator{
+  json::impl::list* current;
+
+  list_iterator(json::impl::list* ptr) : current(ptr) {}
+
+  json& operator*() const {
+    return current->info;
+  }
+
+  list_iterator& operator++() {
+    current = current->next;
+    return *this;
+  }
+
+  bool operator==(const list_iterator& other) const {
+    return current == other.current;
+  }
+
+  bool operator!=(const list_iterator& other) const {
+    return !(*this == other);
+  }
+
+  //I need to do the operator-> function
+};
+
+json::list_iterator json::begin_list(){
+  if(is_list()){
+    return list_iterator(pimpl->list_head);
+  }
+  
+  throw json_exception{ .msg = "Json isn't a list"};
+}
+
+json::list_iterator json::end_list(){
+  if(is_list()){
+    return list_iterator(pimpl->list_tail);
+  }
+
+  throw json_exception{ .msg = "Json isn't a list"};
+}
 // dictionary control
 
 bool json::is_dictionary() const {
@@ -116,6 +156,44 @@ void json::insert(std::pair<std::string, json> const& elem) {
   }
 }
 
+struct json::dictionary_iterator{
+  json::impl::dict* current;
+
+  dictionary_iterator(json::impl::dict* ptr) : current(ptr) {}
+
+  std::pair<std::string, json>& operator*() const {
+    return current->info;
+  }
+
+  dictionary_iterator& operator++() {
+    current = current->next;
+    return *this;
+  }
+
+  bool operator==(const dictionary_iterator& other) const {
+    return current == other.current;
+  }
+
+  bool operator!=(const dictionary_iterator& other) const {
+    return !(*this == other);
+  }
+
+  //I need to do the operator-> function
+};
+
+json::dictionary_iterator json::begin_dictionary() {
+  if(is_dictionary()){
+    return dictionary_iterator(pimpl->dict_head);
+  }
+  throw json_exception{.msg = "Json isn't a dict!"};  
+}
+
+json::dictionary_iterator json::end_dictionary(){
+  if(is_dictionary()){
+    return dictionary_iterator(pimpl->dict_tail);
+  } 
+  throw json_exception{ .msg = "Json isn't a dict!"}
+}
 
 // string control
 
