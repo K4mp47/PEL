@@ -1,4 +1,4 @@
-#include "../include/json.hpp"
+#include "json.hpp"
 
 // define type of the json struct
 enum Type {
@@ -36,23 +36,11 @@ struct json::impl {
 
     void clear() {
         if(type == Type::List) {
-            //impl::list *currentList = list_head;
             delete list_head;
-            /*while (currentList) {
-                impl::list *toRemove = currentList;
-                currentList = currentList->next;
-                delete toRemove;
-            }*/
             list_head = nullptr;
             list_tail = nullptr;
         } else if (type == Type::Dict) {
-            //impl::dict *currentDict = dict_head;
             delete dict_head;
-            /*while (currentDict) {
-                impl::dict *toRemove = currentDict;
-                currentDict = currentDict->next;
-                delete toRemove;
-            }*/
             dict_head = nullptr;
             dict_tail = nullptr;
         }
@@ -65,30 +53,38 @@ struct json::impl {
 
     impl() = default;
 
-    impl(impl& pimpl) {
+    impl(const impl& pimpl) {
         if(pimpl.type == Type::List) {
-            list_head = new list(*pimpl.list_head);
-            list_tail = list_head;
-            list* other_curr = pimpl.list_head->next;
-            list* curr = list_head;
-            while (other_curr->next) {
-                curr->next = new list{*other_curr->next};
-                curr = curr->next;
-                list_tail = curr;
-                other_curr = other_curr->next;
+            if(pimpl.list_head != nullptr) {
+                list_head = new list(*pimpl.list_head);
+                list_tail = list_head;
+                list *other_curr = pimpl.list_head;
+                list *curr = list_head;
+                while (other_curr->next) {
+                    curr->next = new list{*other_curr->next};
+                    curr = curr->next;
+                    list_tail = curr;
+                    other_curr = other_curr->next;
+                }
+            } else {
+                list_head = list_tail = nullptr;
             }
             type = Type::List;
 
         } else if(pimpl.type == Type::Dict) {
-            dict_head = new dict(*pimpl.dict_head);
-            dict_tail = dict_head;
-            dict* other_curr = pimpl.dict_head->next;
-            dict* curr = dict_head;
-            while (other_curr->next) {
-                curr->next = new dict(*other_curr->next);
-                curr = curr->next;
-                dict_tail = curr;
-                other_curr = other_curr->next;
+            if(pimpl.dict_head != nullptr){
+                dict_head = new dict(*pimpl.dict_head);
+                dict_tail = dict_head;
+                dict *other_curr = pimpl.dict_head;
+                dict *curr = dict_head;
+                while (other_curr->next) {
+                    curr->next = new dict(*other_curr->next);
+                    curr = curr->next;
+                    dict_tail = curr;
+                    other_curr = other_curr->next;
+                }
+            } else {
+                dict_head = dict_tail = nullptr;
             }
             type = Type::Dict;
 
@@ -120,16 +116,19 @@ json::json(json &&other) : pimpl() {
 }
 
 json &json::operator=(json const &other) {
-    if (this == &other) {
-        return *this;
-    }
+    if(other.pimpl != nullptr) {
 
-    if(pimpl != nullptr){
-        delete pimpl;
-        pimpl = nullptr;
-    }
+        if (this == &other) {
+            return *this;
+        }
 
-    pimpl = new impl(*other.pimpl);
+        if (pimpl != nullptr) {
+            delete pimpl;
+            pimpl = nullptr;
+        }
+
+        pimpl = new impl(*other.pimpl);
+    }
 
     return *this;
 }
@@ -147,9 +146,7 @@ json &json::operator=(json &&other) {
 }
 
 json const &json::operator[](std::string const &other) const {
-    if (pimpl->type != Type::Dict) {
-        throw json_exception{"Json isn't a type dict! operator[]"};
-    }
+    if (!is_dictionary()) throw json_exception{"Json isn't a type dict! operator[]"};
 
     for (json::impl::dict *curr = pimpl->dict_head; curr != nullptr; curr = curr->next) {
         if (curr->info.first == other) {
@@ -162,9 +159,7 @@ json const &json::operator[](std::string const &other) const {
 
 
 json &json::operator[](std::string const &other) {
-    if (pimpl->type != Type::Dict) {
-        throw json_exception{.msg = "Json isn't a type dict! operator[]"};
-    }
+    if (!is_dictionary()) throw json_exception{.msg = "Json isn't a type dict! operator[]"};
 
     for (json::impl::dict *curr = pimpl->dict_head; curr != nullptr; curr = curr->next) {
         if (curr->info.first == other) {
@@ -231,6 +226,12 @@ struct json::list_iterator {
         return *this;
     }
 
+    list_iterator operator++(int) {
+        list_iterator temp = *this;
+        ++(*this);
+        return temp;
+    }
+
     bool operator==(const list_iterator &other) const {
         return current == other.current;
     }
@@ -256,6 +257,12 @@ struct json::const_list_iterator {
     const_list_iterator &operator++() {
         current = current->next;
         return *this;
+    }
+
+    const_list_iterator operator++(int) {
+        const_list_iterator temp = *this;
+        ++(*this);
+        return temp;
     }
 
     bool operator==(const const_list_iterator &other) const {
@@ -296,7 +303,7 @@ json::const_list_iterator json::begin_list() const {
 
 json::const_list_iterator json::end_list() const {
     if (is_list()) {
-        return const_list_iterator(nullptr);
+        return const_list_iterator(pimpl->list_tail);
     }
     throw json_exception{.msg = "json isn't a list! end_list const"};
 }
@@ -337,6 +344,12 @@ struct json::dictionary_iterator {
         return *this;
     }
 
+    dictionary_iterator operator++(int) {
+        dictionary_iterator temp = *this;
+        ++(*this);
+        return temp;
+    }
+
     bool operator==(const dictionary_iterator &other) const {
         return current == other.current;
     }
@@ -365,6 +378,12 @@ struct json::const_dictionary_iterator {
         return *this;
     }
 
+    const_dictionary_iterator operator++(int) {
+        const_dictionary_iterator temp = *this;
+        ++(*this);
+        return temp;
+    }
+
     bool operator==(const const_dictionary_iterator &other) const {
         return current == other.current;
     }
@@ -388,7 +407,7 @@ json::const_dictionary_iterator json::begin_dictionary() const {
 
 json::const_dictionary_iterator json::end_dictionary() const {
     if (is_dictionary()) {
-        return const_dictionary_iterator(nullptr);
+        return const_dictionary_iterator(pimpl->dict_tail);
     }
     throw json_exception{.msg = "Json isn't a dict! end_dictionary const"};
 }
@@ -517,7 +536,7 @@ void json::set_null() {
     pimpl->type = Type::Null;
 }
 
-std::ostream &operator<<(std::ostream &lhs, json const &rhs) {
+std::ostream &operator<<(std::ostream& lhs, json const &rhs) {
     if (rhs.is_null()) {
         lhs << "null";
     } else if (rhs.is_string()) {
@@ -526,29 +545,38 @@ std::ostream &operator<<(std::ostream &lhs, json const &rhs) {
         bool boolean = rhs.get_bool();
         lhs << (boolean ? "true" : "false");
     } else if (rhs.is_number()) {
+        lhs.precision(10);
         lhs << rhs.get_number();
     } else if (rhs.is_list()) {
-        lhs << "[ ";
-        auto iterator = rhs.begin_list();
-        while(iterator != rhs.end_list()){
-            lhs << *iterator;
-            lhs << ", ";
-            ++iterator;
+        if(rhs.begin_list() == nullptr){
+            lhs << "[]";
+        } else {
+            lhs << "[ ";
+            auto iterator = rhs.begin_list();
+            while(iterator != rhs.end_list()){
+                lhs << *iterator;
+                lhs << ", ";
+                ++iterator;
+            }
+            if(iterator == rhs.end_list())
+                lhs << *iterator;
+            lhs << " ]";
         }
-        if(iterator == rhs.end_list())
-            lhs << *iterator;
-        lhs << " ]";
     } else if (rhs.is_dictionary()) {
-        lhs << "{ ";
-        auto iterator = rhs.begin_dictionary();
-        while(iterator != rhs.end_dictionary()){
-            lhs << "\"" << iterator->first << "\" : " << iterator->second;
-            lhs << ", ";
-            ++iterator;
+        if(rhs.begin_dictionary() == nullptr){
+            lhs << "{} ";
+        } else {
+            lhs << "{ ";
+            auto iterator = rhs.begin_dictionary();
+            while(iterator != rhs.end_dictionary()){
+                lhs << "\"" << iterator->first << "\" : " << iterator->second;
+                lhs << ", ";
+                iterator++;
+            }
+            if(iterator == rhs.end_dictionary())
+                lhs << "\"" << iterator->first << "\" : " << iterator->second;
+            lhs << " }";
         }
-        if(iterator == rhs.end_dictionary())
-            lhs << "\"" << iterator->first << "\" : " << iterator->second;
-        lhs << " }";
     }
 
     return lhs;
@@ -567,7 +595,6 @@ std::istream &operator>>(std::istream& hs, json& rhs) {
         hs >> num;
         rhs.set_number(num); // Set Num Type
     } else if (c == 't' || c == 'f') {
-        //parse_boolean(hs, rhs); ? serve?
         int count = hs.peek() == 't'? 4:5;
         char boolean[count+1];
         hs.read(boolean, count);
@@ -625,4 +652,12 @@ std::istream &operator>>(std::istream& hs, json& rhs) {
     }
 
     return hs;
+}
+
+int main(){
+    std::ifstream is("in.json");
+    std::ofstream on("out.json");
+    json j;
+    is >> j;
+    on << j;
 }

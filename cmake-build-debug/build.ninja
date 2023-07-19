@@ -49,12 +49,6 @@ cmake_ninja_workdir = /home/albertocampagnolo/Desktop/PEL_project_2023/cmake-bui
 
 build cmake_object_order_depends_target_PEL_project_2023_container_test: phony || CMakeFiles/PEL_project_2023_container_test.dir
 
-build CMakeFiles/PEL_project_2023_container_test.dir/test/test.cpp.o: CXX_COMPILER__PEL_project_2023_container_test_Debug /home/albertocampagnolo/Desktop/PEL_project_2023/test/test.cpp || cmake_object_order_depends_target_PEL_project_2023_container_test
-  DEP_FILE = CMakeFiles/PEL_project_2023_container_test.dir/test/test.cpp.o.d
-  FLAGS = -Ofast -lstdc++ -std=c++17 -g -fdiagnostics-color=always
-  OBJECT_DIR = CMakeFiles/PEL_project_2023_container_test.dir
-  OBJECT_FILE_DIR = CMakeFiles/PEL_project_2023_container_test.dir/test
-
 build CMakeFiles/PEL_project_2023_container_test.dir/src/json.cpp.o: CXX_COMPILER__PEL_project_2023_container_test_Debug /home/albertocampagnolo/Desktop/PEL_project_2023/src/json.cpp || cmake_object_order_depends_target_PEL_project_2023_container_test
   DEP_FILE = CMakeFiles/PEL_project_2023_container_test.dir/src/json.cpp.o.d
   FLAGS = -Ofast -lstdc++ -std=c++17 -g -fdiagnostics-color=always
@@ -69,7 +63,7 @@ build CMakeFiles/PEL_project_2023_container_test.dir/src/json.cpp.o: CXX_COMPILE
 #############################################
 # Link the executable PEL_project_2023_container_test
 
-build PEL_project_2023_container_test: CXX_EXECUTABLE_LINKER__PEL_project_2023_container_test_Debug CMakeFiles/PEL_project_2023_container_test.dir/test/test.cpp.o CMakeFiles/PEL_project_2023_container_test.dir/src/json.cpp.o
+build PEL_project_2023_container_test: CXX_EXECUTABLE_LINKER__PEL_project_2023_container_test_Debug CMakeFiles/PEL_project_2023_container_test.dir/src/json.cpp.o
   FLAGS = -Ofast -lstdc++ -std=c++17 -g
   OBJECT_DIR = CMakeFiles/PEL_project_2023_container_test.dir
   POST_BUILD = :
@@ -113,18 +107,6 @@ build PEL_project_2023_streaming_test: CXX_EXECUTABLE_LINKER__PEL_project_2023_s
   PRE_LINK = :
   TARGET_FILE = PEL_project_2023_streaming_test
   TARGET_PDB = PEL_project_2023_streaming_test.dbg
-
-
-#############################################
-# Utility command for test
-
-build CMakeFiles/test.util: CUSTOM_COMMAND
-  COMMAND = cd /home/albertocampagnolo/Desktop/PEL_project_2023/cmake-build-debug && /home/albertocampagnolo/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.9011.31/bin/cmake/linux/x64/bin/ctest --force-new-ctest-process
-  DESC = Running tests...
-  pool = console
-  restat = 1
-
-build test: phony CMakeFiles/test.util
 
 
 #############################################
